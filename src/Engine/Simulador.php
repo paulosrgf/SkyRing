@@ -15,22 +15,23 @@ class Simulador
 {
     private array $jogadores = [];
     private int $turno = 1;
+    
+    // NOVO: Array que vai armazenar todo o histórico da partida (Requisito da image_9f9565.png)
+    private array $logBatalha = [];
 
     public function iniciar(): void
     {
-        // Limpa a tela antes de abrir o jogo
         system('clear');
 
         echo "===================================================\n";
         echo "       🌌 BEM-VINDO AO SKYRING ARENA v2 🌌         \n";
         echo "===================================================\n\n";
 
-        // 1. Seleção de Personagens Expandida
         $this->jogadores[0] = $this->selecionarPersonagem("Jogador 1");
-        system('clear'); // Limpa para que o Jogador 2 não sofra spoiler do nome/classe do Jogador 1
+        system('clear');
         
         $this->jogadores[1] = $this->selecionarPersonagem("Jogador 2");
-        system('clear'); // Limpa para mostrar a introdução do combate isolada
+        system('clear');
 
         echo "===================================================\n";
         echo "⚔️  O COMBATE VAI COMEÇAR! ⚔️\n";
@@ -41,9 +42,7 @@ class Simulador
 
         $indiceAtual = 0; 
         
-        // 2. Loop Principal de Combate
         while ($this->jogadores[0]->estaVivo() && $this->jogadores[1]->estaVivo()) {
-            // Limpa a tela a cada início de turno
             system('clear');
 
             $jogadorAtual = $this->jogadores[$indiceAtual];
@@ -53,13 +52,25 @@ class Simulador
             echo "🔮 TURNO {$this->turno} | Vez de: {$jogadorAtual->getNome()} ({$jogadorAtual->getTipo()})\n";
             echo "---------------------------------------------------\n";
             
-            // Processa efeitos de status (Burn, Bleed, Poison) e armadura no início do turno
+            // Cria a gaveta deste turno no nosso array de Logs
+            $this->logBatalha[$this->turno] = [
+                'personagem' => "{$jogadorAtual->getNome()} ({$jogadorAtual->getTipo()})",
+                'acoes' => []
+            ];
+
+            // Processa efeitos de status no início do turno
             $logStatus = $jogadorAtual->iniciarTurno();
             if (!empty($logStatus)) {
                 echo "\n=== ⚠️ STATUS NEGATIVOS DO TURNO ===\n" . $logStatus . "====================================\n\n";
                 
-                // Checa se os efeitos mataram o personagem antes dele agir
+                // Grava os danos de status sofridos no log do turno
+                $linhasStatus = explode("\n", trim($logStatus));
+                foreach ($linhasStatus as $linha) {
+                    $this->logBatalha[$this->turno]['acoes'][] = $linha;
+                }
+
                 if (!$jogadorAtual->estaVivo()) {
+                    $this->logBatalha[$this->turno]['acoes'][] = "💀 {$jogadorAtual->getNome()} sucumbiu aos efeitos de status nocivos!";
                     echo "💀 {$jogadorAtual->getNome()} sucumbiu aos efeitos de status nocivos!\n";
                     echo "Pressione ENTER para continuar...";
                     fgets(STDIN);
@@ -67,26 +78,23 @@ class Simulador
                 }
             }
 
-            // Exibe os painéis de HP e Energia de ambos
             $this->exibirStatus();
 
-            // Executa o fluxo de ações (Trata o inventário de forma livre)
+            // Executa as ações do turno
             $this->executarTurno($jogadorAtual, $oponente);
 
-            // Se o oponente morreu com o ataque, encerra o loop imediatamente
             if (!$oponente->estaVivo()) {
+                $this->logBatalha[$this->turno]['acoes'][] = "💀 {$oponente->getNome()} foi derrotado em combate!";
                 break;
             }
 
-            // Alterna o turno
             $indiceAtual = $indiceAtual === 0 ? 1 : 0;
             $this->turno++;
             echo "\nPressione ENTER para passar o turno...";
             fgets(STDIN);
         }
 
-        // 3. Resultado Final
-        system('clear'); // Isola a tela de vitória
+        system('clear');
         $this->exibirResultadoFinal();
     }
 
@@ -132,7 +140,6 @@ class Simulador
     }
 
     private function executarTurno(Personagem $ativo, Personagem $oponente): void
-    
     {
         $fezAcaoPrincipal = false;
 
@@ -153,7 +160,12 @@ class Simulador
                     echo "---------------------------------------------------\n";
                     echo "⚔️ RELATÓRIO DE COMBATE\n";
                     echo "---------------------------------------------------\n";
-                    echo $ativo->atacar($oponente) . "\n";
+                    
+                    $resultadoAtaque = $ativo->atacar($oponente);
+                    echo $resultadoAtaque . "\n";
+                    
+                    // Salva a ação no log de turnos
+                    $this->logBatalha[$this->turno]['acoes'][] = "⚔️ " . $resultadoAtaque;
                     $fezAcaoPrincipal = true;
                     break;
 
@@ -162,7 +174,12 @@ class Simulador
                     echo "---------------------------------------------------\n";
                     echo "🛡️ RELATÓRIO DE DEFESA\n";
                     echo "---------------------------------------------------\n";
-                    echo $ativo->defender() . "\n";
+                    
+                    $resultadoDefesa = $ativo->defender();
+                    echo $resultadoDefesa . "\n";
+                    
+                    // Salva a ação no log de turnos
+                    $this->logBatalha[$this->turno]['acoes'][] = "🛡️ " . $resultadoDefesa;
                     $fezAcaoPrincipal = true;
                     break;
 
@@ -172,7 +189,6 @@ class Simulador
                         if ($conjurou) {
                             $fezAcaoPrincipal = true;
                         } else {
-                            // Se cancelou a habilidade, limpa e redesenha o menu principal do turno
                             system('clear');
                             echo "---------------------------------------------------\n";
                             echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
@@ -186,7 +202,6 @@ class Simulador
 
                 case '4':
                     $this->gerenciarInventario($ativo);
-                    // Ao sair do inventário, limpa e redesenha a tela de ações para continuar o turno
                     system('clear');
                     echo "---------------------------------------------------\n";
                     echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
@@ -241,7 +256,12 @@ class Simulador
                 echo "---------------------------------------------------\n";
                 echo "📜 RELATÓRIO DE CONJURAÇÃO\n";
                 echo "---------------------------------------------------\n";
-                echo $ativo->conjurarHabilidade($idEscolhido, $oponente) . "\n";
+                
+                $resultadoHabilidade = $ativo->conjurarHabilidade($idEscolhido, $oponente);
+                echo $resultadoHabilidade . "\n";
+                
+                // Salva a conjuração no log de turnos
+                $this->logBatalha[$this->turno]['acoes'][] = "📜 " . $resultadoHabilidade;
                 return true; 
             }
 
@@ -285,7 +305,13 @@ class Simulador
                 echo "---------------------------------------------------\n";
                 echo "🎒 USO DE ITEM\n";
                 echo "---------------------------------------------------\n";
-                echo $ativo->usarItem('pocao_vida') . "\n";
+                
+                $resultadoItem = $ativo->usarItem('pocao_vida');
+                echo $resultadoItem . "\n";
+                
+                // Salva o uso do item no log de turnos
+                $this->logBatalha[$this->turno]['acoes'][] = "🎒 " . $resultadoItem;
+                
                 echo "\nPressione ENTER para voltar às suas ações principais...";
                 fgets(STDIN);
                 return; 
@@ -302,7 +328,13 @@ class Simulador
                 echo "---------------------------------------------------\n";
                 echo "🎒 USO DE ITEM\n";
                 echo "---------------------------------------------------\n";
-                echo $ativo->usarItem('pocao_mana') . "\n";
+                
+                $resultadoItem = $ativo->usarItem('pocao_mana');
+                echo $resultadoItem . "\n";
+                
+                // Salva o uso do item no log de turnos
+                $this->logBatalha[$this->turno]['acoes'][] = "🎒 " . $resultadoItem;
+                
                 echo "\nPressione ENTER para voltar às suas ações principais...";
                 fgets(STDIN);
                 return; 
@@ -324,6 +356,30 @@ class Simulador
         echo "🏆 VENCEDOR INCONTESTÁVEL: {$vencedor->getNome()} ({$vencedor->getTipo()})\n";
         echo "⏱️  A arena resistiu por: " . ($this->turno) . " turnos de pura estratégia.\n";
         echo "❤️ HP Restante do campeão: {$vencedor->getVida()}/{$vencedor->getVidaMax()}\n";
+        echo "===================================================\n\n";
+        
+        echo "Pressione ENTER para exibir o Histórico/Log Completo da partida...";
+        fgets(STDIN);
+        
+        // NOVO: Renderiza o Log completo separado por turnos ao final (Exigência da image_9f9565.png)
+        system('clear');
+        echo "===================================================\n";
+        echo "📜 HISTÓRICO COMPLETO DA BATALHA (LOGS) 📜\n";
+        echo "===================================================\n";
+        
+        foreach ($this->logBatalha as $numTurno => $dadosTurno) {
+            echo "📌 TURNO {$numTurno} | Agente: {$dadosTurno['personagem']}\n";
+            if (empty($dadosTurno['acoes'])) {
+                echo "   └─ Nenhuma ação registrada ou turno interrompido.\n";
+            } else {
+                foreach ($dadosTurno['acoes'] as $acao) {
+                    echo "   └─ {$acao}\n";
+                }
+            }
+            echo "---------------------------------------------------\n";
+        }
+        echo "===================================================\n";
+        echo "Fim do relatório do SkyRing Arena. Obrigado por jogar!\n";
         echo "===================================================\n";
     }
 }
