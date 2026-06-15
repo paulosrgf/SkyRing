@@ -5,6 +5,11 @@ namespace SkyRing\Engine;
 use SkyRing\Personagens\Personagem;
 use SkyRing\Personagens\Guerreiro;
 use SkyRing\Personagens\Mago;
+use SkyRing\Personagens\Necromante;
+use SkyRing\Personagens\Paladino;
+use SkyRing\Personagens\Monge;
+use SkyRing\Personagens\Bruxa;
+use SkyRing\Contratos\ConjuraHabilidadesInterface;
 
 class Simulador
 {
@@ -13,115 +18,229 @@ class Simulador
 
     public function iniciar(): void
     {
-        echo "=========================================\n";
-        echo "    🌌 BEM-VINDO AO SKYRING ARENA 🌌     \n";
-        echo "=========================================\n\n";
+        echo "===================================================\n";
+        echo "       🌌 BEM-VINDO AO SKYRING ARENA v2 🌌         \n";
+        echo "===================================================\n\n";
 
-        // 1. Seleção de Personagens (Requisito do Enunciado)
+        // 1. Seleção de Personagens Expandida
         $this->jogadores[0] = $this->selecionarPersonagem("Jogador 1");
         $this->jogadores[1] = $this->selecionarPersonagem("Jogador 2");
 
-        echo "\n--- O COMBATE VAI COMEÇAR ---\n";
-        echo "{$this->jogadores[0]->getNome()} VS {$this->jogadores[1]->getNome()}\n";
-        echo "=========================================\n\n";
+        echo "\n===================================================\n";
+        echo "⚔️  O COMBATE VAI COMEÇAR! ⚔️\n";
+        echo "🔥 {$this->jogadores[0]->getNome()} ({$this->jogadores[0]->getTipo()}) VS {$this->jogadores[1]->getNome()} ({$this->jogadores[1]->getTipo()})\n";
+        echo "===================================================\n\n";
 
-        // 2. Loop Principal de Combate (Até alguém morrer)
-        $indiceAtual = 0; // Começa com o Jogador 1
+        $indiceAtual = 0; 
         
+        // 2. Loop Principal de Combate
         while ($this->jogadores[0]->estaVivo() && $this->jogadores[1]->estaVivo()) {
             $jogadorAtual = $this->jogadores[$indiceAtual];
             $oponente = $this->jogadores[$indiceAtual === 0 ? 1 : 0];
 
-            echo "-----------------------------------------\n";
-            echo "TURNO {$this->turno} - Vez de: {$jogadorAtual->getNome()} ({$jogadorAtual->getTipo()})\n";
-            echo "-----------------------------------------\n";
+            echo "---------------------------------------------------\n";
+            echo "🔮 TURNO {$this->turno} | Vez de: {$jogadorAtual->getNome()} ({$jogadorAtual->getTipo()})\n";
+            echo "---------------------------------------------------\n";
             
-            // Prepara o personagem para o turno (reseta defesa, regenera mana)
-            $jogadorAtual->iniciarTurno();
+            // Processa efeitos de status (Burn, Bleed, Poison) e armadura no início do turno
+            $logStatus = $jogadorAtual->iniciarTurno();
+            if (!empty($logStatus)) {
+                echo "\n=== ⚠️ STATUS NEGATIVOS DO TURNO ===\n" . $logStatus . "====================================\n\n";
+                
+                // Checa se os efeitos mataram o personagem antes dele agir
+                if (!$jogadorAtual->estaVivo()) {
+                    echo "💀 {$jogadorAtual->getNome()} sucumbiu aos efeitos de status nocivos!\n";
+                    break;
+                }
+            }
 
-            // Exibe status da tela de combate (Requisito do Enunciado)
+            // Exibe os painéis de HP e Energia de ambos
             $this->exibirStatus();
 
-            // Executa a ação do jogador
+            // Executa o fluxo de ações (Trata o inventário de forma livre)
             $this->executarTurno($jogadorAtual, $oponente);
 
-            // Alterna o jogador para o próximo turno
+            // Se o oponente morreu com o ataque, encerra o loop imediatamente
+            if (!$oponente->estaVivo()) {
+                break;
+            }
+
+            // Alterna o turno
             $indiceAtual = $indiceAtual === 0 ? 1 : 0;
             $this->turno++;
-            echo "\nPressione ENTER para continuar...";
+            echo "\nPressione ENTER para passar o turno...";
             fgets(STDIN);
+            echo "\n";
         }
 
-        // 3. Condição de Vitória e Resumo Final
+        // 3. Resultado Final
         $this->exibirResultadoFinal();
     }
 
     private function selecionarPersonagem(string $nomeJogador): Personagem
     {
         while (true) {
-            echo "{$nomeJogador}, escolha seu combatente:\n";
-            echo "1. Guerreiro (Alta Defesa e Vida, Especial focado em quebra de armadura)\n";
-            echo "2. Mago (Alto Ataque e Mana, Especial de dano massivo)\n";
-            echo "Escolha (1-2): ";
+            echo "➔ {$nomeJogador}, escolha a classe do seu combatente:\n";
+            echo "  1. Guerreiro   |  2. Mago       |  3. Necromante\n";
+            echo "  4. Paladino    |  5. Monge      |  6. Bruxa\n";
+            echo "Escolha (1-6): ";
             
             $entrada = trim(fgets(STDIN));
 
             echo "Digite o nome customizado do seu personagem: ";
             $nomeCustomizado = trim(fgets(STDIN));
             if (empty($nomeCustomizado)) {
-                $nomeCustomizado = ($entrada == 1) ? "Valente" : "Eldrin";
+                $nomeCustomizado = "Heroi_" . rand(100, 999);
             }
 
-            if ($entrada === '1') {
-                return new Guerreiro($nomeCustomizado);
-            } elseif ($entrada === '2') {
-                return new Mago($nomeCustomizado);
+            switch ($entrada) {
+                case '1': return new Guerreiro($nomeCustomizado);
+                case '2': return new Mago($nomeCustomizado);
+                case '3': return new Necromante($nomeCustomizado);
+                case '4': return new Paladino($nomeCustomizado);
+                case '5': return new Monge($nomeCustomizado);
+                case '6': return new Bruxa($nomeCustomizado);
             }
 
-            echo "\n❌ Opção inválida! Tente novamente.\n\n";
+            echo "\n❌ Opção inválida! Selecione um número de 1 a 6.\n\n";
         }
     }
 
     private function exibirStatus(): void
     {
         foreach ($this->jogadores as $p) {
-            $barraVida = str_repeat("■", max(0, ceil($p->getVida() / 10)));
-            echo "• {$p->getNome()} ({$p->getTipo()}) -> HP: {$p->getVida()} [{$barraVida}] | Energia: {$p->getEnergia()}\n";
+            $porcentagemVida = max(0, ceil(($p->getVida() / $p->getVidaMax()) * 10));
+            $barraVida = str_repeat("■", $porcentagemVida) . str_repeat("□", 10 - $porcentagemVida);
+            
+            echo "• {$p->getNome()} ({$p->getTipo()})\n";
+            echo "  [{$barraVida}] HP: {$p->getVida()}/{$p->getVidaMax()} | Energia: {$p->getEnergia()}/{$p->getEnergiaMax()}\n";
         }
-        echo "-----------------------------------------\n";
+        echo "---------------------------------------------------\n";
     }
 
     private function executarTurno(Personagem $ativo, Personagem $oponente): void
     {
-        while (true) {
-            echo "AÇÕES DISPONÍVEIS:\n";
-            echo "1. Atacar\n";
-            echo "2. Defender\n";
-            echo "3. Usar Habilidade Especial (Custo: " . ($ativo instanceof \SkyRing\Contratos\HabilidadeEspecialInterface ? $ativo->getCustoEnergia() : 0) . " de Energia)\n";
-            echo "Escolha uma ação: ";
+        $fezAcaoPrincipal = false;
 
-            $acao = trim(fgets(STDIN));
+        while (!$fezAcaoPrincipal) {
+            echo "SUA VEZ! ESCOLHA UMA AÇÃO:\n";
+            echo "1. Atacar (Básico)\n";
+            echo "2. Defender (Aumentar Guarda)\n";
+            echo "3. Conjurar Magias/Táticas (Habilidades)\n";
+            echo "4. Abrir Inventário (Poções)\n";
+            echo "Escolha: ";
+
+            $escolha = trim(fgets(STDIN));
             echo "\n";
 
-            if ($acao === '1') {
-                echo $ativo->atacar($oponente) . "\n";
-                break;
-            } elseif ($acao === '2') {
-                echo $ativo->defender() . "\n";
-                break;
-            } elseif ($acao === '3') {
-                // Tratamento de Exceção simples para energia (Exigência do enunciado)
-                if ($ativo instanceof \SkyRing\Contratos\HabilidadeEspecialInterface) {
-                    if ($ativo->getEnergia() < $ativo->getCustoEnergia()) {
-                        echo "❌ Energia insuficiente para usar o Especial! Escolha outra ação.\n\n";
-                        continue;
-                    }
-                    echo $ativo->usarHabilidadeEspecial($oponente) . "\n";
+            switch ($escolha) {
+                case '1':
+                    echo $ativo->atacar($oponente) . "\n";
+                    $fezAcaoPrincipal = true;
                     break;
-                }
+
+                case '2':
+                    echo $ativo->defender() . "\n";
+                    $fezAcaoPrincipal = true;
+                    break;
+
+                case '3':
+                    if ($ativo instanceof ConjuraHabilidadesInterface) {
+                        $conjurou = $this->gerenciarMenuHabilidades($ativo, $oponente);
+                        if ($conjurou) {
+                            $fezAcaoPrincipal = true;
+                        }
+                    } else {
+                        echo "❌ Este personagem não possui habilidades mágicas ou táticas.\n\n";
+                    }
+                    break;
+
+                case '4':
+                    // Acessa o inventário. Se usar com sucesso, NÃO consome o turno (continua no loop)
+                    $this->gerenciarInventario($ativo);
+                    break;
+
+                default:
+                    echo "❌ Opção inválida! Selecione uma ação correta.\n\n";
+                    break;
+            }
+        }
+    }
+
+    private function gerenciarMenuHabilidades(Personagem $ativo, Personagem $oponente): bool
+    {
+        $habilidades = $ativo->getMenuHabilidades();
+        
+        while (true) {
+            echo "=== 📜 GRIMÓRIO / HABILIDADES ===\n";
+            foreach ($habilidades as $id => $info) {
+                echo "{$id}. {$info['nome']} (Custo: {$info['custo']} Energia)\n";
+                echo "   └─ Descrição: {$info['desc']}\n";
+            }
+            echo "0. Voltar ao menu de ações\n";
+            echo "Escolha a habilidade para conjurar: ";
+
+            $idEscolhido = (int)trim(fgets(STDIN));
+            echo "\n";
+
+            if ($idEscolhido === 0) {
+                return false; // Não conjurou, volta pro menu principal do turno
             }
 
-            echo "❌ Ação inválida! Selecione uma opção correta.\n\n";
+            if (isset($habilidades[$idEscolhido])) {
+                $custo = $habilidades[$idEscolhido]['custo'];
+                
+                // Validação de recurso (Energia/Mana)
+                if ($ativo->getEnergia() < $custo) {
+                    echo "❌ Energia/Mana insuficiente! Você precisa de {$custo} mas tem apenas {$ativo->getEnergia()}.\n\n";
+                    continue;
+                }
+
+                // Conjura a habilidade de forma polimórfica
+                echo $ativo->conjurarHabilidade($idEscolhido, $oponente) . "\n";
+                return true; // Conjuração feita com sucesso!
+            }
+
+            echo "❌ Código de habilidade inválido!\n\n";
+        }
+    }
+
+    private function gerenciarInventario(Personagem $ativo): void
+    {
+        while (true) {
+            $inv = $ativo->getInventario();
+            echo "=== 🎒 INVENTÁRIO DE " . strtoupper($ativo->getNome()) . " ===\n";
+            echo "1. Poção de Vida (Recupera 35% HP Máx) - Qtd: [{$inv['pocao_vida']}]\n";
+            echo "2. Poção de Mana/Estamina (+50 Energia) - Qtd: [{$inv['pocao_mana']}]\n";
+            echo "0. Fechar Inventário e Voltar\n";
+            echo "Selecione o item para usar: ";
+
+            $itemEscolhido = trim(fgets(STDIN));
+            echo "\n";
+
+            if ($itemEscolhido === '0') {
+                return; // Só fecha o inventário e volta pras ações
+            }
+
+            if ($itemEscolhido === '1') {
+                if ($inv['pocao_vida'] <= 0) {
+                    echo "❌ Você não tem Poções de Vida restantes!\n\n";
+                    continue;
+                }
+                echo $ativo->usarItem('pocao_vida') . "\n\n";
+                return; // Item usado com sucesso, sai do inventário e faz a ação principal
+            }
+
+            if ($itemEscolhido === '2') {
+                if ($inv['pocao_mana'] <= 0) {
+                    echo "❌ Você não tem Poções de Mana restantes!\n\n";
+                    continue;
+                }
+                echo $ativo->usarItem('pocao_mana') . "\n\n";
+                return; // Item usado com sucesso
+            }
+
+            echo "❌ Opção inválida!\n\n";
         }
     }
 
@@ -129,12 +248,12 @@ class Simulador
     {
         $vencedor = $this->jogadores[0]->estaVivo() ? $this->jogadores[0] : $this->jogadores[1];
         
-        echo "\n=========================================\n";
-        echo "💥 FIM DE JOGO! O COMBATE TERMINOU! 💥\n";
-        echo "=========================================\n";
-        echo "🏆 VENCEDOR: {$vencedor->getNome()} ({$vencedor->getTipo()})\n";
-        echo "⏱️ Duração da partida: " . ($this->turno - 1) . " turnos.\n";
-        echo "❤️ HP Restante do vencedor: {$vencedor->getVida()}\n";
-        echo "=========================================\n";
+        echo "\n===================================================\n";
+        echo "💥 FIM DE JOGO! O COMBATE FOI CONCLUÍDO! 💥\n";
+        echo "===================================================\n";
+        echo "🏆 VENCEDOR INCONTESTÁVEL: {$vencedor->getNome()} ({$vencedor->getTipo()})\n";
+        echo "⏱️  A arena resistiu por: " . ($this->turno) . " turnos de pura estratégia.\n";
+        echo "❤️ HP Restante do campeão: {$vencedor->getVida()}/{$vencedor->getVidaMax()}\n";
+        echo "===================================================\n";
     }
 }
