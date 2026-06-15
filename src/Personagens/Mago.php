@@ -2,57 +2,59 @@
 
 namespace SkyRing\Personagens;
 
-use SkyRing\Contratos\HabilidadeEspecialInterface;
+use SkyRing\Contratos\ConjuraHabilidadesInterface;
 
-class Mago extends Personagem implements HabilidadeEspecialInterface
+class Mago extends Personagem implements ConjuraHabilidadesInterface
 {
-    private const CUSTO_ESPECIAL = 50;
-    private const BONUS_DEFESA_TURNO = 4;
-
     public function __construct(string $nome)
     {
-        // Balanceamento: Pouca Vida (80), Defesa Baixa (4), Ataque Alto (25),Muita Energia (100)
-        parent::__construct($nome, "Mago", 80, 25, 4, 100);
-    }
-
-    public function iniciarTurno(): void
-    {
-        $this->defesaAtual = $this->defesaBase;
-        // Mago regenera mais mana por turno que o guerreiro
-        $this->energia = min($this->energiaMax, $this->energia + 15);
+        // Balanceamento: Vida Baixa/Média (160), Defesa Baixa (5), Ataque Alto (26), Muita Mana (120)
+        parent::__construct($nome, "Mago", 160, 26, 5, 120);
     }
 
     public function atacar(Personagem $oponente): string
     {
         $dano = $this->ataqueBase - $oponente->defesaAtual;
-        if ($dano < self::DANO_MINIMO) {
-            $dano = self::DANO_MINIMO;
-        }
+        if ($dano < self::DANO_MINIMO) $dano = self::DANO_MINIMO;
 
         $oponente->receberDano($dano);
-
-        return "{$this->nome} (Mago) lançou um projétil de energia mágica causando {$dano} de dano em {$oponente->getNome()}!";
+        return "🔮 {$this->nome} (Mago) lançou um projétil de energia mágica causando {$dano} de dano em {$oponente->getNome()}!";
     }
 
     public function defender(): string
     {
-        $this->defesaAtual += self::BONUS_DEFESA_TURNO;
-        return "{$this->nome} (Mago) conjurou uma barreira mágica fina para se proteger!";
+        $this->defesaAtual += 4;
+        return "🔮 {$this->nome} (Mago) conjurou uma barreira mágica fina para se proteger!";
     }
 
-    // Cumprindo o contrato da Interface
-    public function usarHabilidadeEspecial(Personagem $oponente): string
+    public function getMenuHabilidades(): array
     {
-        $danoEspecial = $this->ataqueBase * 2; // Dano massivo dobrado
-        
-        $this->energia -= self::CUSTO_ESPECIAL;
-        $oponente->receberDano($danoEspecial);
-
-        return "⚡ {$this->nome} conjurou uma [Explosão Arcana] avassaladora! O céu estremeceu e causou {$danoEspecial} de dano em {$oponente->getNome()}!";
+        return [
+            1 => ['nome' => 'Explosão Arcana', 'custo' => 50, 'desc' => 'Dano massivo equivalente ao dobro do ataque base (ignora bônus de turno).'],
+            2 => ['nome' => 'Bola de Fogo', 'custo' => 40, 'desc' => 'Causa 20 de dano inicial e incendeia o alvo (Burn) por 3 turnos.']
+        ];
     }
 
-    public function getCustoEnergia(): int
+    public function conjurarHabilidade(int $idHabilidade, Personagem $oponente): string
     {
-        return self::CUSTO_ESPECIAL;
+        if ($idHabilidade === 1) {
+            $this->energia -= 50;
+            $danoEspecial = $this->ataqueBase * 2; 
+            $oponente->receberDano($danoEspecial);
+
+            return "⚡ {$this->nome} conjurou uma [Explosão Arcana] avassaladora! O céu estremeceu e causou {$danoEspecial} de dano em {$oponente->getNome()}!";
+        }
+
+        if ($idHabilidade === 2) {
+            $this->energia -= 40;
+            $danoInicial = 20;
+            $oponente->receberDano($danoInicial);
+            // Aplica Burn (Queimadura) por 3 turnos
+            $oponente->aplicarStatus('burn', 3);
+
+            return "🔥 {$this->nome} lançou uma [Bola de Fogo] rugiente! Causou {$danoInicial} de dano de impacto e INCENDIOU {$oponente->getNome()} por 3 turnos!";
+        }
+
+        return "❌ Habilidade desconhecida.";
     }
 }

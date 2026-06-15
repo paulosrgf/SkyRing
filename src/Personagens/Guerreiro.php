@@ -2,62 +2,60 @@
 
 namespace SkyRing\Personagens;
 
-use SkyRing\Contratos\HabilidadeEspecialInterface;
+use SkyRing\Contratos\ConjuraHabilidadesInterface;
 
-class Guerreiro extends Personagem implements HabilidadeEspecialInterface
+class Guerreiro extends Personagem implements ConjuraHabilidadesInterface
 {
-    private const CUSTO_ESPECIAL = 40;
-    private const BONUS_DEFESA_TURNO = 8;
-
     public function __construct(string $nome)
     {
-        // Balanceamento: Muita Vida (120), Defesa Alta (10), Ataque Moderado (15), Energia Inicial (60)
-        parent::__construct($nome, "Guerreiro", 120, 15, 10, 60);
-    }
-
-    public function iniciarTurno(): void
-    {
-        // Regra do enunciado: Resetar bônus de defesa temporário no início do turno
-        $this->defesaAtual = $this->defesaBase;
-        
-        // Regeneração parcial de energia por turno
-        $this->energia = min($this->energiaMax, $this->energia + 5);
+        // Balanceamento: Muita Vida (250), Defesa Alta (11), Ataque Moderado (16), Estamina Inicial (70)
+        parent::__construct($nome, "Guerreiro", 250, 16, 11, 70);
     }
 
     public function atacar(Personagem $oponente): string
     {
-        // Cálculo de dano: Ataque - Defesa do Alvo
         $dano = $this->ataqueBase - $oponente->defesaAtual;
-        if ($dano < self::DANO_MINIMO) {
-            $dano = self::DANO_MINIMO;
-        }
+        if ($dano < self::DANO_MINIMO) $dano = self::DANO_MINIMO;
 
         $oponente->receberDano($dano);
-
-        return "{$this->nome} (Guerreiro) avançou com sua espada e causou {$dano} de dano em {$oponente->getNome()}!";
+        return "⚔️ {$this->nome} (Guerreiro) avançou com sua espada e causou {$dano} de dano em {$oponente->getNome()}!";
     }
 
     public function defender(): string
     {
-        // Aumenta temporariamente a defesa
-        $this->defesaAtual += self::BONUS_DEFESA_TURNO;
-        return "{$this->nome} (Guerreiro) ergueu seu escudo pesado, aumentando sua defesa para este turno!";
+        $this->defesaAtual += 8;
+        return "🛡️ {$this->nome} (Guerreiro) ergueu seu escudo pesado, aumentando sua defesa para este turno!";
     }
 
-    // Cumprindo o contrato da Interface
-    public function usarHabilidadeEspecial(Personagem $oponente): string
+    public function getMenuHabilidades(): array
     {
-        // Causar dano elevado furando a defesa (Regra de negócio customizada)
-        $danoEspecial = $this->ataqueBase + 15; 
-        
-        $this->energia -= self::CUSTO_ESPECIAL;
-        $oponente->receberDano($danoEspecial);
-
-        return "🔥 {$this->nome} usou [Golpe Devastador]! Ignorou a armadura e cravou {$danoEspecial} de dano em {$oponente->getNome()}!";
+        return [
+            1 => ['nome' => 'Golpe Devastador', 'custo' => 35, 'desc' => 'Ataque brutal (Ataque + 15) que ignora completamente a armadura (defesa) do alvo.'],
+            2 => ['nome' => 'Grito de Batalha', 'custo' => 25, 'desc' => 'Intimida o oponente causando sangramento (Bleed) por 2 turnos devido à pressão física.']
+        ];
     }
 
-    public function getCustoEnergia(): int
+    public function conjurarHabilidade(int $idHabilidade, Personagem $oponente): string
     {
-        return self::CUSTO_ESPECIAL;
+        if ($idHabilidade === 1) {
+            $this->energia -= 35;
+            // Ignora a defesa do oponente completamente
+            $danoEspecial = $this->ataqueBase + 15; 
+            $oponente->receberDano($danoEspecial);
+
+            return "🔥 {$this->nome} usou [Golpe Devastador]! Ignorou a armadura e cravou {$danoEspecial} de dano direto em {$oponente->getNome()}!";
+        }
+
+        if ($idHabilidade === 2) {
+            $this->energia -= 25;
+            $danoInicial = 5;
+            $oponente->receberDano($danoInicial);
+            // Aplica Bleed (Sangramento) por 2 turnos
+            $oponente->aplicarStatus('bleed', 2);
+
+            return "📢 {$this->nome} soltou um [Grito de Batalha] ensurdecedor! Causou {$danoInicial} de dano pelo impacto e deixou {$oponente->getNome()} atordoado e sangrando (Bleed) por 2 turnos!";
+        }
+
+        return "❌ Habilidade desconhecida.";
     }
 }
