@@ -8,8 +8,8 @@ class Paladino extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Status: Muita Vida (260), Defesa Excelente (14), Ataque Moderado (18), Estamina Baixa (80)
-        parent::__construct($nome, "Paladino", 260, 18, 14, 80);
+        // Buff no Ataque (24) e mantida a Defesa/Vida excelentes
+        parent::__construct($nome, "Paladino", 260, 24, 14, 80);
     }
 
     public function atacar(Personagem $oponente): string
@@ -31,7 +31,7 @@ class Paladino extends Personagem implements ConjuraHabilidadesInterface
     {
         return [
             1 => ['nome' => 'Luz Sagrada', 'custo' => 45, 'desc' => 'Invoca milagre que cura 60 de HP do próprio Paladino.'],
-            2 => ['nome' => 'Julgamento Retributivo', 'custo' => 50, 'desc' => 'Dano baseado na vida perdida. Causa 15 de dano + 20% do HP que o Paladino perdeu na partida.']
+            2 => ['nome' => 'Julgamento Retributivo', 'custo' => 50, 'desc' => 'A mecânica da virada! Causa 15 de dano base + 35% de toda a vida que o Paladino perdeu na partida.']
         ];
     }
 
@@ -47,11 +47,12 @@ class Paladino extends Personagem implements ConjuraHabilidadesInterface
         if ($idHabilidade === 2) {
             $this->energia -= 50;
             $vidaPerdida = $this->vidaMax - $this->vida;
-            $danoBonus = (int)($vidaPerdida * 0.20); // 20% do HP perdido vira dano
+            // Buff pesado: 35% do HP perdido vira dano puro
+            $danoBonus = (int)($vidaPerdida * 0.35); 
             $danoTotal = 15 + $danoBonus;
             
             $oponente->receberDano($danoTotal);
-            return "⚖️ {$this->nome} decretou [Julgamento Retributivo]! Descarregou a dor de suas feridas causando {$danoTotal} de dano em {$oponente->getNome()}!";
+            return "⚖️ {$this->nome} decretou [Julgamento Retributivo]! Descarregou a fúria de suas feridas causando {$danoTotal} de dano em {$oponente->getNome()}!";
         }
 
         return "❌ Habilidade desconhecida.";
