@@ -18,23 +18,34 @@ class Simulador
 
     public function iniciar(): void
     {
+        // Limpa a tela antes de abrir o jogo
+        system('clear');
+
         echo "===================================================\n";
         echo "       🌌 BEM-VINDO AO SKYRING ARENA v2 🌌         \n";
         echo "===================================================\n\n";
 
         // 1. Seleção de Personagens Expandida
         $this->jogadores[0] = $this->selecionarPersonagem("Jogador 1");
+        system('clear'); // Limpa para que o Jogador 2 não sofra spoiler do nome/classe do Jogador 1
+        
         $this->jogadores[1] = $this->selecionarPersonagem("Jogador 2");
+        system('clear'); // Limpa para mostrar a introdução do combate isolada
 
-        echo "\n===================================================\n";
+        echo "===================================================\n";
         echo "⚔️  O COMBATE VAI COMEÇAR! ⚔️\n";
         echo "🔥 {$this->jogadores[0]->getNome()} ({$this->jogadores[0]->getTipo()}) VS {$this->jogadores[1]->getNome()} ({$this->jogadores[1]->getTipo()})\n";
         echo "===================================================\n\n";
+        echo "Pressione ENTER para entrar na Arena...";
+        fgets(STDIN);
 
         $indiceAtual = 0; 
         
         // 2. Loop Principal de Combate
         while ($this->jogadores[0]->estaVivo() && $this->jogadores[1]->estaVivo()) {
+            // Limpa a tela a cada início de turno
+            system('clear');
+
             $jogadorAtual = $this->jogadores[$indiceAtual];
             $oponente = $this->jogadores[$indiceAtual === 0 ? 1 : 0];
 
@@ -50,6 +61,8 @@ class Simulador
                 // Checa se os efeitos mataram o personagem antes dele agir
                 if (!$jogadorAtual->estaVivo()) {
                     echo "💀 {$jogadorAtual->getNome()} sucumbiu aos efeitos de status nocivos!\n";
+                    echo "Pressione ENTER para continuar...";
+                    fgets(STDIN);
                     break;
                 }
             }
@@ -70,10 +83,10 @@ class Simulador
             $this->turno++;
             echo "\nPressione ENTER para passar o turno...";
             fgets(STDIN);
-            echo "\n";
         }
 
         // 3. Resultado Final
+        system('clear'); // Isola a tela de vitória
         $this->exibirResultadoFinal();
     }
 
@@ -119,6 +132,7 @@ class Simulador
     }
 
     private function executarTurno(Personagem $ativo, Personagem $oponente): void
+    
     {
         $fezAcaoPrincipal = false;
 
@@ -135,11 +149,19 @@ class Simulador
 
             switch ($escolha) {
                 case '1':
+                    system('clear');
+                    echo "---------------------------------------------------\n";
+                    echo "⚔️ RELATÓRIO DE COMBATE\n";
+                    echo "---------------------------------------------------\n";
                     echo $ativo->atacar($oponente) . "\n";
                     $fezAcaoPrincipal = true;
                     break;
 
                 case '2':
+                    system('clear');
+                    echo "---------------------------------------------------\n";
+                    echo "🛡️ RELATÓRIO DE DEFESA\n";
+                    echo "---------------------------------------------------\n";
                     echo $ativo->defender() . "\n";
                     $fezAcaoPrincipal = true;
                     break;
@@ -149,6 +171,13 @@ class Simulador
                         $conjurou = $this->gerenciarMenuHabilidades($ativo, $oponente);
                         if ($conjurou) {
                             $fezAcaoPrincipal = true;
+                        } else {
+                            // Se cancelou a habilidade, limpa e redesenha o menu principal do turno
+                            system('clear');
+                            echo "---------------------------------------------------\n";
+                            echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
+                            echo "---------------------------------------------------\n";
+                            $this->exibirStatus();
                         }
                     } else {
                         echo "❌ Este personagem não possui habilidades mágicas ou táticas.\n\n";
@@ -156,8 +185,13 @@ class Simulador
                     break;
 
                 case '4':
-                    // Acessa o inventário. Se usar com sucesso, NÃO consome o turno (continua no loop)
                     $this->gerenciarInventario($ativo);
+                    // Ao sair do inventário, limpa e redesenha a tela de ações para continuar o turno
+                    system('clear');
+                    echo "---------------------------------------------------\n";
+                    echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
+                    echo "---------------------------------------------------\n";
+                    $this->exibirStatus();
                     break;
 
                 default:
@@ -172,6 +206,12 @@ class Simulador
         $habilidades = $ativo->getMenuHabilidades();
         
         while (true) {
+            system('clear');
+            echo "---------------------------------------------------\n";
+            echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
+            echo "---------------------------------------------------\n";
+            $this->exibirStatus();
+
             echo "=== 📜 GRIMÓRIO / HABILIDADES ===\n";
             foreach ($habilidades as $id => $info) {
                 echo "{$id}. {$info['nome']} (Custo: {$info['custo']} Energia)\n";
@@ -184,30 +224,42 @@ class Simulador
             echo "\n";
 
             if ($idEscolhido === 0) {
-                return false; // Não conjurou, volta pro menu principal do turno
+                return false; 
             }
 
             if (isset($habilidades[$idEscolhido])) {
                 $custo = $habilidades[$idEscolhido]['custo'];
                 
-                // Validação de recurso (Energia/Mana)
                 if ($ativo->getEnergia() < $custo) {
-                    echo "❌ Energia/Mana insuficiente! Você precisa de {$custo} mas tem apenas {$ativo->getEnergia()}.\n\n";
+                    echo "❌ Energia/Mana insuficiente! Você precisa de {$custo} mas tem apenas {$ativo->getEnergia()}.\n";
+                    echo "Pressione ENTER para tentar novamente...";
+                    fgets(STDIN);
                     continue;
                 }
 
-                // Conjura a habilidade de forma polimórfica
+                system('clear');
+                echo "---------------------------------------------------\n";
+                echo "📜 RELATÓRIO DE CONJURAÇÃO\n";
+                echo "---------------------------------------------------\n";
                 echo $ativo->conjurarHabilidade($idEscolhido, $oponente) . "\n";
-                return true; // Conjuração feita com sucesso!
+                return true; 
             }
 
-            echo "❌ Código de habilidade inválido!\n\n";
+            echo "❌ Código de habilidade inválido!\n";
+            echo "Pressione ENTER para tentar novamente...";
+            fgets(STDIN);
         }
     }
 
     private function gerenciarInventario(Personagem $ativo): void
     {
         while (true) {
+            system('clear');
+            echo "---------------------------------------------------\n";
+            echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
+            echo "---------------------------------------------------\n";
+            $this->exibirStatus();
+
             $inv = $ativo->getInventario();
             echo "=== 🎒 INVENTÁRIO DE " . strtoupper($ativo->getNome()) . " ===\n";
             echo "1. Poção de Vida (Recupera 35% HP Máx) - Qtd: [{$inv['pocao_vida']}]\n";
@@ -219,28 +271,46 @@ class Simulador
             echo "\n";
 
             if ($itemEscolhido === '0') {
-                return; // Só fecha o inventário e volta pras ações
+                return; 
             }
 
             if ($itemEscolhido === '1') {
                 if ($inv['pocao_vida'] <= 0) {
-                    echo "❌ Você não tem Poções de Vida restantes!\n\n";
+                    echo "❌ Você não tem Poções de Vida restantes!\n";
+                    echo "Pressione ENTER para continuar...";
+                    fgets(STDIN);
                     continue;
                 }
-                echo $ativo->usarItem('pocao_vida') . "\n\n";
-                return; // Item usado com sucesso, sai do inventário e faz a ação principal
+                system('clear');
+                echo "---------------------------------------------------\n";
+                echo "🎒 USO DE ITEM\n";
+                echo "---------------------------------------------------\n";
+                echo $ativo->usarItem('pocao_vida') . "\n";
+                echo "\nPressione ENTER para voltar às suas ações principais...";
+                fgets(STDIN);
+                return; 
             }
 
             if ($itemEscolhido === '2') {
                 if ($inv['pocao_mana'] <= 0) {
-                    echo "❌ Você não tem Poções de Mana restantes!\n\n";
+                    echo "❌ Você não tem Poções de Mana restantes!\n";
+                    echo "Pressione ENTER para continuar...";
+                    fgets(STDIN);
                     continue;
                 }
-                echo $ativo->usarItem('pocao_mana') . "\n\n";
-                return; // Item usado com sucesso
+                system('clear');
+                echo "---------------------------------------------------\n";
+                echo "🎒 USO DE ITEM\n";
+                echo "---------------------------------------------------\n";
+                echo $ativo->usarItem('pocao_mana') . "\n";
+                echo "\nPressione ENTER para voltar às suas ações principais...";
+                fgets(STDIN);
+                return; 
             }
 
-            echo "❌ Opção inválida!\n\n";
+            echo "❌ Opção inválida!\n";
+            echo "Pressione ENTER para tentar novamente...";
+            fgets(STDIN);
         }
     }
 
