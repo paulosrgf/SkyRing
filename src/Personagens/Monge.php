@@ -8,7 +8,6 @@ class Monge extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Status: Vida Alta (210), Ataque Ágil (21), Defesa Média (9), Energia Fluida (90)
         parent::__construct($nome, "Monge", 210, 21, 9, 90);
     }
 

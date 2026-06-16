@@ -8,7 +8,6 @@ class Paladino extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Buff no Ataque (24) e mantida a Defesa/Vida excelentes
         parent::__construct($nome, "Paladino", 260, 24, 14, 80);
     }
 
@@ -47,7 +46,6 @@ class Paladino extends Personagem implements ConjuraHabilidadesInterface
         if ($idHabilidade === 2) {
             $this->energia -= 50;
             $vidaPerdida = $this->vidaMax - $this->vida;
-            // Buff pesado: 35% do HP perdido vira dano puro
             $danoBonus = (int)($vidaPerdida * 0.35); 
             $danoTotal = 15 + $danoBonus;
             

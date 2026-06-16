@@ -16,24 +16,21 @@ class Simulador
     private array $jogadores = [];
     private int $turno = 1;
     
-    // Array que armazena todo o histórico da partida para o relatório final
     private array $logBatalha = [];
 
     public function iniciar(): void
     {
-        // Limpa o terminal antes de iniciar o jogo
         system('clear');
 
         echo "===================================================\n";
-        echo "       🌌 BEM-VINDO AO SKYRING ARENA v2 🌌         \n";
+        echo "       🌌 BEM-VINDO AO SKYRING ARENA 🌌         \n";
         echo "===================================================\n\n";
 
-        // 1. Seleção de Personagens
         $this->jogadores[0] = $this->selecionarPersonagem("Jogador 1");
-        system('clear'); // Limpa para que o Jogador 2 não veja a escolha do Jogador 1
+        system('clear');
         
         $this->jogadores[1] = $this->selecionarPersonagem("Jogador 2");
-        system('clear'); // Limpa para mostrar a introdução do combate isolada
+        system('clear');
 
         echo "===================================================\n";
         echo " ⚔️  O COMBATE VAI COMEÇAR! ⚔️\n";
@@ -44,9 +41,7 @@ class Simulador
 
         $indiceAtual = 0; 
         
-        // 2. Loop Principal de Combate
         while ($this->jogadores[0]->estaVivo() && $this->jogadores[1]->estaVivo()) {
-            // Limpa o ecrã a cada início de turno
             system('clear');
 
             $jogadorAtual = $this->jogadores[$indiceAtual];
@@ -56,24 +51,20 @@ class Simulador
             echo "🔮 TURNO {$this->turno} | Vez de: {$jogadorAtual->getNome()} ({$jogadorAtual->getTipo()})\n";
             echo "---------------------------------------------------\n";
             
-            // Cria a estrutura de registo para este turno
             $this->logBatalha[$this->turno] = [
                 'personagem' => "{$jogadorAtual->getNome()} ({$jogadorAtual->getTipo()})",
                 'acoes' => []
             ];
 
-            // Processa efeitos de status (Burn, Bleed, Poison) no início do turno
             $logStatus = $jogadorAtual->iniciarTurno();
             if (!empty($logStatus)) {
                 echo "\n=== ⚠️ STATUS NEGATIVOS DO TURNO ===\n" . $logStatus . "====================================\n\n";
                 
-                // Grava as alterações de status no log
                 $linhasStatus = explode("\n", trim($logStatus));
                 foreach ($linhasStatus as $linha) {
                     $this->logBatalha[$this->turno]['acoes'][] = $linha;
                 }
 
-                // Verifica se o personagem morreu devido aos efeitos antes de agir
                 if (!$jogadorAtual->estaVivo()) {
                     $this->logBatalha[$this->turno]['acoes'][] = "💀 {$jogadorAtual->getNome()} sucumbiu aos efeitos de status nocivos!";
                     echo "💀 {$jogadorAtual->getNome()} sucumbiu aos efeitos de status nocivos!\n";
@@ -83,26 +74,21 @@ class Simulador
                 }
             }
 
-            // Exibe os painéis de HP e Energia atualizados
             $this->exibirStatus();
 
-            // Executa o fluxo de ações principal do turno
             $this->executarTurno($jogadorAtual, $oponente);
 
-            // Se o oponente foi derrotado, interrompe o loop imediatamente
             if (!$oponente->estaVivo()) {
                 $this->logBatalha[$this->turno]['acoes'][] = "💀 {$oponente->getNome()} foi derrotado em combate!";
                 break;
             }
 
-            // Alterna o jogador ativo e incrementa o turno
             $indiceAtual = $indiceAtual === 0 ? 1 : 0;
             $this->turno++;
             echo "\nPressione ENTER para passar o turno...";
             fgets(STDIN);
         }
 
-        // 3. Resultado Final e Logs Opcionais
         system('clear');
         $this->exibirResultadoFinal();
     }
@@ -173,7 +159,6 @@ class Simulador
                     $resultadoAtaque = $ativo->atacar($oponente);
                     echo $resultadoAtaque . "\n";
                     
-                    // Regista a ação no histórico
                     $this->logBatalha[$this->turno]['acoes'][] = "⚔️ " . $resultadoAtaque;
                     $fezAcaoPrincipal = true;
                     break;
@@ -187,7 +172,6 @@ class Simulador
                     $resultadoDefesa = $ativo->defender();
                     echo $resultadoDefesa . "\n";
                     
-                    // Regista a ação no histórico
                     $this->logBatalha[$this->turno]['acoes'][] = "🛡️ " . $resultadoDefesa;
                     $fezAcaoPrincipal = true;
                     break;
@@ -270,8 +254,7 @@ class Simulador
                 
                 $resultadoHabilidade = $ativo->conjurarHabilidade($idEscolhido, $oponente);
                 echo $resultadoHabilidade . "\n";
-                
-                // Regista a conjuração no histórico
+
                 $this->logBatalha[$this->turno]['acoes'][] = "📜 " . $resultadoHabilidade;
                 return true; 
             }

@@ -8,8 +8,7 @@ class Mago extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Balanceamento: Vida Baixa/Média (160), Defesa Baixa (5), Ataque Alto (26), Muita Mana (120)
-        parent::__construct($nome, "Mago", 160, 26, 5, 120);
+        parent::__construct($nome, "Mago", 160, 26, 5, 140);
     }
 
     public function atacar(Personagem $oponente): string

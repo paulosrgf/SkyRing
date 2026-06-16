@@ -8,7 +8,6 @@ class Guerreiro extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Buff no Ataque (22) e mantida a Vida Alta (250)
         parent::__construct($nome, "Guerreiro", 250, 22, 11, 70);
     }
 
@@ -39,7 +38,6 @@ class Guerreiro extends Personagem implements ConjuraHabilidadesInterface
     {
         if ($idHabilidade === 1) {
             $this->energia -= 35;
-            // Dano bufado para +20 ignorando armadura
             $danoEspecial = $this->ataqueBase + 20; 
             $oponente->receberDano($danoEspecial);
 

@@ -8,8 +8,7 @@ class Necromante extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Status: Vida Moderada (180), Ataque Mágico Constante (22), Mana Alta (100)
-        parent::__construct($nome, "Necromante", 180, 22, 8, 100);
+        parent::__construct($nome, "Necromante", 180, 22, 8, 150);
     }
 
     public function atacar(Personagem $oponente): string
@@ -50,8 +49,6 @@ class Necromante extends Personagem implements ConjuraHabilidadesInterface
             $this->energia -= 55;
             $dano = 25;
             $oponente->receberDano($dano);
-            
-            // Mecânica única: debuff permanente na defesa base do oponente
             $oponente->defesaBase = max(0, $oponente->defesaBase - 4);
             $oponente->defesaAtual = max(0, $oponente->defesaAtual - 4);
             

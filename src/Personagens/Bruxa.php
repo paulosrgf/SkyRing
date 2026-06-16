@@ -8,7 +8,6 @@ class Bruxa extends Personagem implements ConjuraHabilidadesInterface
 {
     public function __construct(string $nome)
     {
-        // Status: Vida equilibrada (190), Ataque Mágico Alto (24), Bastante Mana (110)
         parent::__construct($nome, "Bruxa", 190, 24, 6, 110);
     }
 

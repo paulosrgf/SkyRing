@@ -16,13 +16,11 @@ abstract class Personagem
     protected int $energiaMax;
     protected int $energia;
 
-    // SISTEMA DE INVENTÁRIO (Requisito novo)
     protected array $inventario = [
         'pocao_vida' => 2,
         'pocao_mana' => 1
     ];
 
-    // SISTEMA DE STATUS EXPANDIDO (Burn, Bleed, Poison)
     protected array $statusEfeitos = [];
 
     public function __construct(string $nome, string $tipo, int $vida, int $ataque, int $defesa, int $energia) 
@@ -41,13 +39,11 @@ abstract class Personagem
     abstract public function atacar(Personagem $oponente): string;
     abstract public function defender(): string;
     
-    // Atualizado para processar os 3 efeitos de status no início do turno
     public function iniciarTurno(): string
     {
         $this->defesaAtual = $this->defesaBase;
         $logEfeitos = "";
 
-        // 1. 🔥 BURNING (Dano fixo moderado)
         if (!empty($this->statusEfeitos['burn'])) {
             $dano = 10;
             $this->receberDano($dano);
@@ -55,7 +51,6 @@ abstract class Personagem
             $logEfeitos .= "🔥 {$this->nome} está queimando! Sofreu {$dano} de dano. ({$this->statusEfeitos['burn']} turnos restantes)\n";
         }
 
-        // 2. 🩸 BLEEDING (Dano escala com a vida atual - sangramento severo)
         if (!empty($this->statusEfeitos['bleed'])) {
             $dano = 15;
             $this->receberDano($dano);
@@ -63,7 +58,6 @@ abstract class Personagem
             $logEfeitos .= "🩸 {$this->nome} está sangrando! Sofreu {$dano} de dano. ({$this->statusEfeitos['bleed']} turnos restantes)\n";
         }
 
-        // 3. 🧪 POISON (Dano progressivo ou constante leve, mas dura muito)
         if (!empty($this->statusEfeitos['poison'])) {
             $dano = 7;
             $this->receberDano($dano);
@@ -74,7 +68,6 @@ abstract class Personagem
         return $logEfeitos;
     }
 
-    // Ações de Inventário
     public function getInventario(): array { return $this->inventario; }
 
     public function usarItem(string $item): string
