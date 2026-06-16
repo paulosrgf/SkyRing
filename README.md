@@ -1,4 +1,4 @@
-# SkyRing Arena v2
+# SkyRing Arena
 
 RPG de Combate por Turnos via Terminal desenvolvido em PHP moderno. O projeto aplica os pilares de Orientação a Objetos (POO), interfaces, polimorfismo e controle estrito de fluxo para simular batalhas táticas entre diferentes classes de personagens.
 
