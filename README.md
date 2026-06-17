@@ -13,7 +13,7 @@ RPG de Combate por Turnos via Terminal desenvolvido em PHP moderno. O projeto ap
 1. Clone o repositório para o seu ambiente local:
 
    ```bash
-   git clone https://github.com/seu-usuario/skyring.git
+   git clone https://github.com/seu-usuario/skyring-arena.git
    cd skyring
    ```
 

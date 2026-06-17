@@ -15,32 +15,34 @@ class Simulador
 {
     private array $jogadores = [];
     private int $turno = 1;
-    
     private array $logBatalha = [];
 
     public function iniciar(): void
     {
+        // Garante a tela limpa assim que o jogo inicia no container
         system('clear');
 
         echo "===================================================\n";
         echo "       🌌 BEM-VINDO AO SKYRING ARENA 🌌         \n";
         echo "===================================================\n\n";
 
+        // 1. Seleção de Personagens com opção de saída
         $this->jogadores[0] = $this->selecionarPersonagem("Jogador 1");
-        system('clear');
+        system('clear'); 
         
         $this->jogadores[1] = $this->selecionarPersonagem("Jogador 2");
-        system('clear');
+        system('clear'); 
 
         echo "===================================================\n";
-        echo " ⚔️  O COMBATE VAI COMEÇAR! ⚔️\n";
-        echo " 🔥 {$this->jogadores[0]->getNome()} ({$this->jogadores[0]->getTipo()}) VS {$this->jogadores[1]->getNome()} ({$this->jogadores[1]->getTipo()})\n";
+        echo "⚔️  O COMBATE VAI COMEÇAR! ⚔️\n";
+        echo "🔥 {$this->jogadores[0]->getNome()} ({$this->jogadores[0]->getTipo()}) VS {$this->jogadores[1]->getNome()} ({$this->jogadores[1]->getTipo()})\n";
         echo "===================================================\n\n";
         echo "Pressione ENTER para entrar na Arena...";
         fgets(STDIN);
 
         $indiceAtual = 0; 
         
+        // 2. Loop Principal de Combate
         while ($this->jogadores[0]->estaVivo() && $this->jogadores[1]->estaVivo()) {
             system('clear');
 
@@ -89,6 +91,7 @@ class Simulador
             fgets(STDIN);
         }
 
+        // 3. Resultado Final
         system('clear');
         $this->exibirResultadoFinal();
     }
@@ -99,26 +102,46 @@ class Simulador
             echo "➔ {$nomeJogador}, escolha a classe do seu combatente:\n";
             echo "  1. Guerreiro   |  2. Mago       |  3. Necromante\n";
             echo "  4. Paladino    |  5. Monge      |  6. Bruxa\n";
-            echo "Escolha (1-6): ";
+            echo "  0. Sair do Jogo\n";
+            echo "Escolha (0-6): ";
             
-            $entrada = trim(fgets(STDIN));
+            $entrada = fgets(STDIN);
 
-            echo "Digite o nome customizado do seu personagem: ";
-            $nomeCustomizado = trim(fgets(STDIN));
-            if (empty($nomeCustomizado)) {
-                $nomeCustomizado = "Heroi_" . rand(100, 999);
+            // Captura interrupções de terminal ou Ctrl+D para não quebrar o container
+            if ($entrada === false || feof(STDIN)) {
+                system('clear');
+                echo "🚪 Conexão com o terminal encerrada. Saindo do SkyRing...\n";
+                exit(0);
             }
 
-            switch ($entrada) {
-                case '1': return new Guerreiro($nomeCustomizado);
-                case '2': return new Mago($nomeCustomizado);
-                case '3': return new Necromante($nomeCustomizado);
-                case '4': return new Paladino($nomeCustomizado);
-                case '5': return new Monge($nomeCustomizado);
-                case '6': return new Bruxa($nomeCustomizado);
+            $entrada = trim($entrada);
+
+            if ($entrada === '0') {
+                system('clear');
+                echo "👋 Saindo da Arena... Até a próxima batalha!\n";
+                exit(0);
             }
 
-            echo "\n❌ Opção inválida! Selecione um número de 1 a 6.\n\n";
+            // Se o input estiver correto, prossegue para o nome customizado
+            if (in_array($entrada, ['1', '2', '3', '4', '5', '6'])) {
+                echo "Digite o nome customizado do seu personagem: ";
+                $nomeCustomizado = trim(fgets(STDIN));
+                if (empty($nomeCustomizado)) {
+                    $nomeCustomizado = "Heroi_" . rand(100, 999);
+                }
+
+                switch ($entrada) {
+                    case '1': return new Guerreiro($nomeCustomizado);
+                    case '2': return new Mago($nomeCustomizado);
+                    case '3': return new Necromante($nomeCustomizado);
+                    case '4': return new Paladino($nomeCustomizado);
+                    case '5': return new Monge($nomeCustomizado);
+                    case '6': return new Bruxa($nomeCustomizado);
+                }
+            }
+
+            system('clear');
+            echo "❌ Opção inválida! Selecione um número válido de 0 a 6.\n\n";
         }
     }
 
@@ -182,7 +205,6 @@ class Simulador
                         if ($conjurou) {
                             $fezAcaoPrincipal = true;
                         } else {
-                            // Se cancelou a habilidade, limpa e redesenha o menu do turno
                             system('clear');
                             echo "---------------------------------------------------\n";
                             echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
@@ -196,7 +218,6 @@ class Simulador
 
                 case '4':
                     $this->gerenciarInventario($ativo);
-                    // Retorna ao menu principal mantendo o turno ativo após fechar o inventário
                     system('clear');
                     echo "---------------------------------------------------\n";
                     echo "🔮 TURNO {$this->turno} | Vez de: {$ativo->getNome()} ({$ativo->getTipo()})\n";
@@ -241,7 +262,7 @@ class Simulador
                 $custo = $habilidades[$idEscolhido]['custo'];
                 
                 if ($ativo->getEnergia() < $custo) {
-                    echo "❌ Energia/Mana insuficiente! Precisa de {$custo} mas tem apenas {$ativo->getEnergia()}.\n";
+                    echo "❌ Energia/Mana insuficiente! Você precisa de {$custo} mas tem apenas {$ativo->getEnergia()}.\n";
                     echo "Pressione ENTER para tentar novamente...";
                     fgets(STDIN);
                     continue;
@@ -254,7 +275,7 @@ class Simulador
                 
                 $resultadoHabilidade = $ativo->conjurarHabilidade($idEscolhido, $oponente);
                 echo $resultadoHabilidade . "\n";
-
+                
                 $this->logBatalha[$this->turno]['acoes'][] = "📜 " . $resultadoHabilidade;
                 return true; 
             }
@@ -290,7 +311,7 @@ class Simulador
 
             if ($itemEscolhido === '1') {
                 if ($inv['pocao_vida'] <= 0) {
-                    echo "❌ Não tem Poções de Vida restantes!\n";
+                    echo "❌ Você não tem Poções de Vida restantes!\n";
                     echo "Pressione ENTER para continuar...";
                     fgets(STDIN);
                     continue;
@@ -303,7 +324,6 @@ class Simulador
                 $resultadoItem = $ativo->usarItem('pocao_vida');
                 echo $resultadoItem . "\n";
                 
-                // Regista o item consumido no histórico
                 $this->logBatalha[$this->turno]['acoes'][] = "🎒 " . $resultadoItem;
                 
                 echo "\nPressione ENTER para voltar às suas ações principais...";
@@ -313,7 +333,7 @@ class Simulador
 
             if ($itemEscolhido === '2') {
                 if ($inv['pocao_mana'] <= 0) {
-                    echo "❌ Não tem Poções de Mana restantes!\n";
+                    echo "❌ Você não tem Poções de Mana restantes!\n";
                     echo "Pressione ENTER para continuar...";
                     fgets(STDIN);
                     continue;
@@ -326,7 +346,6 @@ class Simulador
                 $resultadoItem = $ativo->usarItem('pocao_mana');
                 echo $resultadoItem . "\n";
                 
-                // Regista o item consumido no histórico
                 $this->logBatalha[$this->turno]['acoes'][] = "🎒 " . $resultadoItem;
                 
                 echo "\nPressione ENTER para voltar às suas ações principais...";
@@ -352,7 +371,6 @@ class Simulador
         echo "❤️ HP Restante do campeão: {$vencedor->getVida()}/{$vencedor->getVidaMax()}\n";
         echo "===================================================\n\n";
         
-        // Pergunta de forma limpa para não quebrar o impacto da tela de vitória
         echo "🤔 Deseja visualizar o histórico detalhado da batalha? (S/N): ";
         $resposta = strtoupper(trim(fgets(STDIN)));
         
@@ -377,7 +395,7 @@ class Simulador
             echo "Fim do relatório do SkyRing Arena. Obrigado por jogar!\n";
             echo "===================================================\n";
         } else {
-            echo "\n✨ Arena fechada com sucesso. Até à próxima batalha!\n";
+            echo "\n✨ Arena fechada com sucesso. Até a próxima batalha!\n";
         }
     }
 }
