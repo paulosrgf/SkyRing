@@ -1,0 +1,11 @@
+# Cache e arquivos locais do Docker / Infra
+.dockerignore
+compose.yaml
+Dockerfile
+
+# Logs de teste de combate e histórico
+*.log
+partida.log
+
+# Sistema operacional
+.DS_Store
