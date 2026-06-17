@@ -1,0 +1,4 @@
+services:
+  skyring-app:
+    build: .
+    container_name: app

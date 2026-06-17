@@ -31,6 +31,16 @@ RPG de Combate por Turnos via Terminal desenvolvido em PHP moderno. O projeto ap
    php Jogo.php
    ```
 
+## Execução via Docker Compose
+
+Caso possua o Docker instalado, você pode executar o simulador em um ambiente totalmente isolado sem a necessidade de configurar o PHP localmente.
+
+1. Construa e execute a arena interativa:
+
+   ```bash
+   docker compose run --rm skyring-app
+   ```
+
 ## Arquitetura e Engenharia de Software
 
 O ecossistema do simulador baseia-se em boas práticas de design de código e engenharia de software:
